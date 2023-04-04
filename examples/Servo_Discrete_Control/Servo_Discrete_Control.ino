@@ -70,11 +70,11 @@ void loop() {
   int signalValueMA = MyoSensor.movingAverage(signalValue,  0.92); // moving average transformation with 0.92 smoothing constant
 
   // start timer if EMG amplitude is greater than the given threshold and it is new start of EMG signal
-  if (signalValueMA >= 200 && timer == 0)
+  if (signalValueMA >= 800 && timer == 0)
       timer = millis();
 
   // if EMG amplitude is bellow than the given threshold
-  if (signalValueMA < 200 && timer != 0)
+  if (signalValueMA < 800 && timer != 0)
   {
     if ((millis() - timer) < 500) // if EMG time length less then 0.5 c
     {
