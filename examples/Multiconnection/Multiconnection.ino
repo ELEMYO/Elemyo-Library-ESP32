@@ -33,7 +33,7 @@ Wiring the ELEMYO sensors to an ESP32
 ELEMYO --> ESP32
   +        5V
   -        GND
-  OUT1     pins 0, 15, 2, 4
+  S        pins 0, 15, 2, 4
   СS       pins 0, 6, 7, 8
   MOSI     pin 23 
   SCK      pin 18
