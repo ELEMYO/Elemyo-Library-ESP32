@@ -65,5 +65,5 @@ void loop() {
   Serial.print(" ");
   Serial.println(sensorValueMA);	// print the results to the Serial Monitor
   
-  delay(1);   // wait before the next loop
+  delay(3);   // wait before the next loop
 }
