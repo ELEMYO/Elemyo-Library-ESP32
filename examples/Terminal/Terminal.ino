@@ -1,10 +1,9 @@
-//  Reads an analog input on pin A0, prints the result to the Serial Monitor.
-//  The sensor gain is controlled by the program.
-//  Graphical representation is available using Elemyo_GUI, Python_GUI and Matlab_GUI.
+//  Sketch for interacting with sensors via ELEMYO_GUI
 //  2021-03-19 by ELEMYO (https://github.com/ELEMYO/Elemyo-library)
 //
 //  Changelog:
-//  2021-03-19 - initial release
+//  2021-03-19 - initial releas
+//  2023-04-04 - 6 sensors data channels were added
 
 /* ============================================
 ELEMYO library code is placed under the MIT license
@@ -35,47 +34,61 @@ Wiring the ELEMYO sensor to an ESP32
 ELEMYO --> ESP32
   +        5V
   -        GND
-  OUT1     pin 13
-  СS       pin 10
-  MOSI     pin 23 
+  S        analog pins 36, 39, 34, 35, 32, 33
+  СS       pins        25, 26,  27,  14,  12,  11 (SS pins)
+  MOSI     pin 23
   SCK      pin 18
 
 */
 
-
 #include <ELEMYO.h>
 
-#define   CSpin         10
-#define   sensorInPin   13      // analog input pin that the sensor is attached to
-#define   timePeriod    0.7     // frequency of signal update (time in ms)
-
-int signalValue = 0;            // value read from the sensor
-long loopTime=0, sendTime=0;    // values for calculating and sending a time period of one loop
-
-ELEMYO MyoSensor(CSpin);
+const int sensorInPin[] = {36, 39, 34, 35, 32, 33};  // analog input pins that the sensors is attached to
+const int CSpin[] = {25, 26, 27, 14, 12, 11};
+int sensorsNumber = 1;                         // number of sensors attached to ESP32
+int timePeriod = 100 + 310*sensorsNumber;      // signal sampling time period (in microseconds)
+int sensorGain[] = {1, 2, 4, 5, 8, 10, 16, 32}; // sensor gain coefficients
+ELEMYO MyoSensor[6];
 
 void setup() {
-  Serial.begin(115200);		// initialize serial communications at 115200 bps
-  MyoSensor.gain(1);		// Initial value of gain
-  pinMode(sensorInPin, INPUT);	// initialize sensorInPin
+  Serial.begin(115200);              // initialize serial communications at 115200 bps
+  for (int i = 0; i < 6; i++)
+  {
+    pinMode(sensorInPin[i], INPUT);  // initialize input pins
+    MyoSensor[i] = ELEMYO(CSpin[i]); // initialize sensors and CS pins
+    MyoSensor[i].gain(1);           // initial sensor gain
+  }
 }
 
+long Time = micros();
 void loop() {
+  byte buf[2];  // data array to send as a series of bytes
   
-  signalValue = analogRead(sensorInPin);  // read the analog in value
-
-  Serial.println(signalValue);            // print the results to the Serial Monitor
-  
-  if (Serial.available() > 0)             // check for byte in buffer
-    MyoSensor.gain(Serial.read());        // Read gain value from serial buffer
-
-  if ((micros() - sendTime > 10000) && (micros() < 100000))
-  {
-    sendTime = micros();
-    Serial.print("T");
-    Serial.println(sendTime - loopTime);
+  // read and write to serial the last sensor signal value
+  for (int i = 0; i < sensorsNumber ; i++)
+  {  
+    int data = analogRead(sensorInPin[i]); // read sensor signal value
+    buf[0] = data & 255;
+    buf[1] = (data >> 8)  & 255;
+    Serial.write(buf, 2); // write to serial sensor signal value
   }
-  loopTime = micros();
+
+  int data = micros() - Time;
+  Time = micros();
+  buf[0] = data & 255;
+  buf[1] = (data >> 8)  & 255;
+  Serial.write(buf, 2);  // write to serial time period between sampling
   
-  delayMicroseconds(timePeriod*1000);     // wait before the next loop
+  buf[0] = 0xFF;
+  buf[1] = 0xFF; 
+  Serial.write(buf, 2); // write to serial two separating bytes
+
+  // checking for input command from ELEMYO GUI
+  if (Serial.available() > 0) {
+    int data = Serial.read(); // read data from serial buffer
+    if (data < 7)
+      sensorsNumber = data;   // set sensors number
+    else
+      MyoSensor[int(data/10) - 1].gain(sensorGain[int(data%10)]); // set new sensor gain
+  }
 }
