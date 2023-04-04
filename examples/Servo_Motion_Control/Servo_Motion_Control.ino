@@ -68,7 +68,7 @@ void loop() {
   Serial.print(" ");
   Serial.println(signalValueMA);    // print the signal value after moving average transformation to the Serial Monitor:
 
-  int val = map(signalValueMA, 0, 1024, 0, 180);      // scale signalValueMA to use it with the servo (value between 0 and 180)
+  int val = map(signalValueMA, 0, 4095, 0, 180);      // scale signalValueMA to use it with the servo (value between 0 and 180)
   myservo.write(val);                                 // sets the servo position according to the scaled value
   
   delay(1);      // wait before the next loop
